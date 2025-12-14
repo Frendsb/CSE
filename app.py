@@ -87,6 +87,37 @@ def get_students():
         return format_response({'students': students_list})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+#SERACHER
+@app.route('/api/students/search', methods=['GET'])
+@token_required
+def search_students():
+    try:
+        first_name = request.args.get('first_name', '')
+        last_name = request.args.get('last_name', '')
+        gender = request.args.get('gender', '')
+        
+        cursor = mysql.connection.cursor()
+        query = "SELECT id, first_name, last_name, gender FROM students WHERE 1=1"
+        params = []
+        
+        if first_name:
+            query += " AND first_name LIKE %s"
+            params.append(f"%{first_name}%")
+        if last_name:
+            query += " AND last_name LIKE %s"
+            params.append(f"%{last_name}%")
+        if gender:
+            query += " AND gender = %s"
+            params.append(gender)
+        
+        cursor.execute(query, tuple(params))
+        students = cursor.fetchall()
+        cursor.close()
+        students_list = [{'id': s[0], 'first_name': s[1], 'last_name': s[2], 'gender': s[3]} for s in students]
+        return format_response({'students': students_list, 'count': len(students_list)})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 #READ ONE STUDENT (BASE IN ID)
 @app.route('/api/students/<int:id>', methods=['GET'])
@@ -158,37 +189,6 @@ def delete_student(id):
         mysql.connection.commit()
         cursor.close()
         return format_response({'message': 'Student deleted'})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-#SERACHER
-@app.route('/api/students/search', methods=['GET'])
-@token_required
-def search_students():
-    try:
-        first_name = request.args.get('first_name', '')
-        last_name = request.args.get('last_name', '')
-        gender = request.args.get('gender', '')
-        
-        cursor = mysql.connection.cursor()
-        query = "SELECT id, first_name, last_name, gender FROM students WHERE 1=1"
-        params = []
-        
-        if first_name:
-            query += " AND first_name LIKE %s"
-            params.append(f"%{first_name}%")
-        if last_name:
-            query += " AND last_name LIKE %s"
-            params.append(f"%{last_name}%")
-        if gender:
-            query += " AND gender = %s"
-            params.append(gender)
-        
-        cursor.execute(query, tuple(params))
-        students = cursor.fetchall()
-        cursor.close()
-        students_list = [{'id': s[0], 'first_name': s[1], 'last_name': s[2], 'gender': s[3]} for s in students]
-        return format_response({'students': students_list, 'count': len(students_list)})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
