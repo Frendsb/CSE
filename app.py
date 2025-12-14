@@ -229,3 +229,32 @@ def update_student(id):
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+#DELETE
+@app.route('/api/students/<int:id>', methods=['DELETE'])
+@token_required
+def delete_student(id):
+    try:
+        cursor = mysql.connection.cursor()
+        
+        cursor.execute("SELECT id FROM students WHERE id = %s", (id,))
+        if not cursor.fetchone():
+            cursor.close()
+            return jsonify({'error': 'Student not found'}), 404
+        
+        cursor.execute("DELETE FROM students WHERE id = %s", (id,))
+        mysql.connection.commit()
+        cursor.close()
+        
+        response_data = {'message': 'Student deleted'}
+        
+        format_type = request.args.get('format', 'json')
+        if format_type == 'xml':
+            xml = dicttoxml.dicttoxml(response_data, custom_root='response', attr_type=False)
+            response = make_response(xml)
+            response.headers['Content-Type'] = 'application/xml'
+            return response
+        
+        return jsonify(response_data), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
