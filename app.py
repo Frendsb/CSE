@@ -169,3 +169,63 @@ def get_student(id):
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+#UPDATE 
+@app.route('/api/students/<int:id>', methods=['PUT'])
+@token_required
+def update_student(id):
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'Request body required'}), 400
+        
+        cursor = mysql.connection.cursor()
+        cursor.execute("SELECT id FROM students WHERE id = %s", (id,))
+        if not cursor.fetchone():
+            cursor.close()
+            return jsonify({'error': 'Student not found'}), 404
+        
+        updates = []
+        values = []
+        
+        if 'first_name' in data:
+            if not data['first_name']:
+                return jsonify({'error': 'first_name cannot be empty'}), 400
+            updates.append("first_name = %s")
+            values.append(data['first_name'])
+        
+        if 'last_name' in data:
+            if not data['last_name']:
+                return jsonify({'error': 'last_name cannot be empty'}), 400
+            updates.append("last_name = %s")
+            values.append(data['last_name'])
+        
+        if 'gender' in data:
+            if data['gender'] not in ['Male', 'Female']:
+                return jsonify({'error': 'gender must be Male or Female'}), 400
+            updates.append("gender = %s")
+            values.append(data['gender'])
+        
+        if not updates:
+            return jsonify({'error': 'No fields to update'}), 400
+        
+        values.append(id)
+        query = f"UPDATE students SET {', '.join(updates)} WHERE id = %s"
+        cursor.execute(query, tuple(values))
+        mysql.connection.commit()
+        cursor.close()
+        
+        response_data = {'message': 'Student updated'}
+        
+        format_type = request.args.get('format', 'json')
+        if format_type == 'xml':
+            xml = dicttoxml.dicttoxml(response_data, custom_root='response', attr_type=False)
+            response = make_response(xml)
+            response.headers['Content-Type'] = 'application/xml'
+            return response
+        
+        return jsonify(response_data), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
