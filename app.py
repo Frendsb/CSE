@@ -103,3 +103,35 @@ def create_student():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+ 
+#READ   
+@app.route('/api/students/<int:id>', methods=['GET'])
+@token_required
+def get_student(id):
+    try:
+        cursor = mysql.connection.cursor()
+        cursor.execute("SELECT id, first_name, last_name, gender FROM students WHERE id = %s", (id,))
+        student = cursor.fetchone()
+        cursor.close()
+        
+        if not student:
+            return jsonify({'error': 'Student not found'}), 404
+        
+        student_data = {
+            'id': student[0],
+            'first_name': student[1],
+            'last_name': student[2],
+            'gender': student[3]
+        }
+        
+        format_type = request.args.get('format', 'json')
+        if format_type == 'xml':
+            xml = dicttoxml.dicttoxml(student_data, custom_root='response', attr_type=False)
+            response = make_response(xml)
+            response.headers['Content-Type'] = 'application/xml'
+            return response
+        
+        return jsonify(student_data), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
