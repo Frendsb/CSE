@@ -56,3 +56,50 @@ def login():
         return jsonify({'error': 'Invalid credentials'}), 401
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+#CRUD SECTION
+#CREATE
+@app.route('/api/students', methods=['POST'])
+@token_required
+def create_student():
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'Request body required'}), 400
+        
+        if 'first_name' not in data or not data['first_name']:
+            return jsonify({'error': 'first_name is required'}), 400
+        
+        if 'last_name' not in data or not data['last_name']:
+            return jsonify({'error': 'last_name is required'}), 400
+            
+        if 'gender' not in data or not data['gender']:
+            return jsonify({'error': 'gender is required'}), 400
+        
+        if data['gender'] not in ['Male', 'Female']:
+            return jsonify({'error': 'gender must be Male or Female'}), 400
+        
+        cursor = mysql.connection.cursor()
+        query = "INSERT INTO students (first_name, last_name, gender) VALUES (%s, %s, %s)"
+        cursor.execute(query, (data['first_name'], data['last_name'], data['gender']))
+        mysql.connection.commit()
+        student_id = cursor.lastrowid
+        cursor.close()
+        
+        response_data = {
+            'message': 'Student created',
+            'id': student_id
+        }
+        
+        format_type = request.args.get('format', 'json')
+        if format_type == 'xml':
+            xml = dicttoxml.dicttoxml(response_data, custom_root='response', attr_type=False)
+            response = make_response(xml)
+            response.headers['Content-Type'] = 'application/xml'
+            return response, 201
+        
+        return jsonify(response_data), 201
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
