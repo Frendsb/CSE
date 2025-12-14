@@ -10,7 +10,7 @@ app.config['SECRET_KEY'] = '27811497e80109982a54cb6fc9d7e055cb492c757f6248aad09f
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = 'root'
-app.config['MYSQL_DB'] = 'cselec'
+app.config['MYSQL_DB'] = 'cse1'
 mysql = MySQL(app)
 
 #JWT
@@ -80,7 +80,7 @@ def create_student():
 def get_students():
     try:
         cursor = mysql.connection.cursor()
-        cursor.execute("SELECT id, first_name, last_name, gender FROM students")
+        cursor.execute("SELECT student_id, first_name, last_name, gender FROM students")
         students = cursor.fetchall()
         cursor.close()
         students_list = [{'id': s[0], 'first_name': s[1], 'last_name': s[2], 'gender': s[3]} for s in students]
@@ -88,7 +88,7 @@ def get_students():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
-#SERACHER
+#SEARCH
 @app.route('/api/students/search', methods=['GET'])
 @token_required
 def search_students():
@@ -98,7 +98,7 @@ def search_students():
         gender = request.args.get('gender', '')
         
         cursor = mysql.connection.cursor()
-        query = "SELECT id, first_name, last_name, gender FROM students WHERE 1=1"
+        query = "SELECT student_id, first_name, last_name, gender FROM students WHERE 1=1"
         params = []
         
         if first_name:
@@ -125,7 +125,7 @@ def search_students():
 def get_student(id):
     try:
         cursor = mysql.connection.cursor()
-        cursor.execute("SELECT id, first_name, last_name, gender FROM students WHERE id = %s", (id,))
+        cursor.execute("SELECT student_id, first_name, last_name, gender FROM students WHERE student_id = %s", (id,))
         student = cursor.fetchone()
         cursor.close()
         if not student:
@@ -145,7 +145,7 @@ def update_student(id):
             return jsonify({'error': 'Request body required'}), 400
         
         cursor = mysql.connection.cursor()
-        cursor.execute("SELECT id FROM students WHERE id = %s", (id,))
+        cursor.execute("SELECT student_id FROM students WHERE student_id = %s", (id,))
         if not cursor.fetchone():
             cursor.close()
             return jsonify({'error': 'Student not found'}), 404
@@ -168,7 +168,7 @@ def update_student(id):
             return jsonify({'error': 'No fields to update'}), 400
         
         values.append(id)
-        cursor.execute(f"UPDATE students SET {', '.join(updates)} WHERE id = %s", tuple(values))
+        cursor.execute(f"UPDATE students SET {', '.join(updates)} WHERE student_id = %s", tuple(values))
         mysql.connection.commit()
         cursor.close()
         return format_response({'message': 'Student updated'})
@@ -181,11 +181,11 @@ def update_student(id):
 def delete_student(id):
     try:
         cursor = mysql.connection.cursor()
-        cursor.execute("SELECT id FROM students WHERE id = %s", (id,))
+        cursor.execute("SELECT student_id FROM students WHERE student_id = %s", (id,))
         if not cursor.fetchone():
             cursor.close()
             return jsonify({'error': 'Student not found'}), 404
-        cursor.execute("DELETE FROM students WHERE id = %s", (id,))
+        cursor.execute("DELETE FROM students WHERE student_id = %s", (id,))
         mysql.connection.commit()
         cursor.close()
         return format_response({'message': 'Student deleted'})
