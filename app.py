@@ -35,3 +35,24 @@ def token_required(f):
         
         return f(*args, **kwargs)
     return decorated
+
+#LOGIN SETUP
+@app.route('/api/login', methods=['POST'])
+def login():
+    try:
+        data = request.get_json()
+        
+        if not data or 'username' not in data or 'password' not in data:
+            return jsonify({'error': 'Username and password required'}), 400
+        
+        if data['username'] == 'admin' and data['password'] == 'password':
+            token = jwt.encode({
+                'user': data['username'],
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30)
+            }, app.config['SECRET_KEY'], algorithm='HS256')
+            
+            return jsonify({'token': token}), 200
+        
+        return jsonify({'error': 'Invalid credentials'}), 401
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
